@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Document Analysis & Migration Readiness Tool - Analyze .docx and .pdf documents for migration to Document360">
+    <title>DocMigrate — Document Analysis & Migration Readiness</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <!-- Background animated gradient -->
+    <div class="bg-gradient"></div>
+    
+    <!-- Header -->
+    <header class="header">
+        <div class="header-inner">
+            <div class="logo">
+                <div class="logo-icon">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                        <polyline points="10 9 9 9 8 9"></polyline>
+                    </svg>
+                </div>
+                <h1>Docs Migrate</h1>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <!-- Upload Section -->
+        <section id="upload-section" class="upload-section">
+            <div class="upload-card glass-card">
+                <div class="upload-icon-wrapper">
+                    <div class="upload-icon pulse">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="17 8 12 3 7 8"></polyline>
+                            <line x1="12" y1="3" x2="12" y2="15"></line>
+                        </svg>
+                    </div>
+                </div>
+                <h2>Upload Your Document</h2>
+                <p class="upload-description">Drop a <strong>.docx</strong> or <strong>.pdf</strong> file to analyze its migration readiness and automatically convert it into clean, copy-pasteable <strong>Markdown for Document360</strong>.</p>
+                
+                <div id="drop-zone" class="drop-zone">
+                    <input type="file" id="file-input" accept=".docx,.pdf" hidden>
+                    <div class="drop-zone-content">
+                        <div class="drop-icon">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                <line x1="12" y1="8" x2="12" y2="16"></line>
+                                <line x1="8" y1="12" x2="16" y2="12"></line>
+                            </svg>
+                        </div>
+                        <p>Drag & Drop or <span class="browse-link">Browse Files</span></p>
+                        <span class="file-types">Supports .docx and .pdf files</span>
+                    </div>
+                </div>
+
+                <div id="file-info" class="file-info hidden">
+                    <div class="file-badge">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                        </svg>
+                        <span id="file-name-display"></span>
+                        <span id="file-size-display" class="file-size"></span>
+                    </div>
+                    <button id="remove-file" class="btn-icon" title="Remove file">✕</button>
+                </div>
+
+                <button id="analyze-btn" class="btn-primary hidden">
+                    
+                    Analyze Document
+                </button>
+            </div>
+        </section>
+
+        <!-- Loading State -->
+        <section id="loading-section" class="loading-section hidden">
+            <div class="glass-card loading-card">
+                <h3 class="loading-title">Analyzing Your Document...</h3>
+                <p class="loading-text">Parsing structure • Extracting metrics • Running AI analysis</p>
+                <div class="progress-bar">
+                    <div class="progress-fill"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Results Section -->
+        <section id="results-section" class="results-section hidden">
+            <!-- Summary Banner -->
+            <div id="summary-banner" class="summary-banner glass-card">
+                <div class="summary-left">
+                    <h2 id="result-filename">document.docx</h2>
+                    <p id="result-summary" class="summary-text"></p>
+                    <span id="analysis-method" class="method-badge"></span>
+                </div>
+                <div class="summary-right">
+                    <div class="score-value">
+                        <span id="overall-score">0</span>
+                        <small>/10</small>
+                    </div>
+                    <span class="score-label">Overall Score</span>
+                </div>
+            </div>
+
+            <!-- Migration Assessment Layout -->
+            <div class="assessment-container">
+                <div id="migration-badge" class="migration-badge glass-card">
+                    <div class="badge-icon" id="badge-icon">✓</div>
+                    <div class="badge-content">
+                        <span class="assessment-label">MIGRATION ASSESSMENT</span>
+                        <h3 id="migration-status">Ready for Migration</h3>
+                        <p id="migration-explanation"></p>
+                    </div>
+                </div>
+                
+                <div class="improvements-card glass-card">
+                    <div class="badge-content">
+                        <span class="assessment-label">WHAT NEEDS IMPROVEMENT?</span>
+                        <ul id="suggestions-list" class="suggestions-list"></ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Metrics Grid -->
+            <div class="section-title">
+                <h2>Document Metrics</h2>
+            </div>
+            <div class="metrics-grid">
+                <div class="metric-card glass-card">
+                    <div class="metric-icon">
+                    </div>
+                    <div class="metric-value" id="metric-pages">0</div>
+                    <div class="metric-label">Total Pages</div>
+                </div>
+                <div class="metric-card glass-card">
+                    <div class="metric-icon">
+                    </div>
+                    <div class="metric-value" id="metric-words">0</div>
+                    <div class="metric-label">Word Count</div>
+                </div>
+                <div class="metric-card glass-card">
+                    <div class="metric-icon">
+                    </div>
+                    <div class="metric-value" id="metric-paragraphs">0</div>
+                    <div class="metric-label">Paragraphs</div>
+                </div>
+                <div class="metric-card glass-card">
+                    <div class="metric-icon">
+                    </div>
+                    <div class="metric-value" id="metric-headings">0</div>
+                    <div class="metric-label">Headings</div>
+                </div>
+                <div class="metric-card glass-card">
+                    <div class="metric-icon">
+                    </div>
+                    <div class="metric-value" id="metric-avg-words">0</div>
+                    <div class="metric-label">Avg Words/Para</div>
+                </div>
+                <div class="metric-card glass-card">
+                    <div class="metric-icon">
+                    </div>
+                    <div class="metric-value" id="metric-reading-time">0</div>
+                    <div class="metric-label">Reading Time (min)</div>
+                </div>
+                <div class="metric-card glass-card">
+                    <div class="metric-icon">
+                    </div>
+                    <div class="metric-value" id="metric-chars">0</div>
+                    <div class="metric-label">Characters</div>
+                </div>
+                <div class="metric-card glass-card">
+                    <div class="metric-icon">
+                    </div>
+                    <div class="metric-value" id="metric-unique-ratio">0</div>
+                    <div class="metric-label">Unique Word Ratio</div>
+                </div>
+            </div>
+
+            <!-- Feature Flags -->
+            <div class="feature-flags">
+                <div class="flag-chip" id="flag-tables">
+                    <span class="flag-dot"></span> Tables
+                </div>
+                <div class="flag-chip" id="flag-images">
+                    <span class="flag-dot"></span> Images
+                </div>
+            </div>
+
+            <!-- AI Analysis Section -->
+            <div class="section-title">
+                
+                <h2>AI Analysis</h2>
+            </div>
+            <div class="ai-grid">
+                <div class="ai-card glass-card">
+                    <div class="ai-card-header">
+                        <h4>Readability</h4>
+                    </div>
+                    <div class="ai-badge" id="ai-readability">Medium</div>
+                    <p id="ai-readability-exp" class="ai-explanation"></p>
+                </div>
+                <div class="ai-card glass-card">
+                    <div class="ai-card-header">
+                        <h4>Content Clarity</h4>
+                    </div>
+                    <div class="ai-score-bar">
+                        <div class="ai-score-fill" id="ai-clarity-bar"></div>
+                        <span class="ai-score-num" id="ai-clarity-score">5/10</span>
+                    </div>
+                    <p id="ai-clarity-exp" class="ai-explanation"></p>
+                </div>
+                <div class="ai-card glass-card">
+                    <div class="ai-card-header">
+                        <h4>Structural Quality</h4>
+                    </div>
+                    <div class="ai-badge" id="ai-structural">Moderate</div>
+                    <p id="ai-structural-exp" class="ai-explanation"></p>
+                </div>
+                <div class="ai-card glass-card">
+                    <div class="ai-card-header">
+                        <h4>Technical Tone</h4>
+                    </div>
+                    <div class="ai-badge" id="ai-tone">Excellent</div>
+                    <div class="ai-score-bar">
+                        <div class="ai-score-fill" id="ai-tone-bar"></div>
+                        <span class="ai-score-num" id="ai-tone-score">100% Active</span>
+                    </div>
+                    <p id="ai-tone-exp" class="ai-explanation"></p>
+                </div>
+            </div>
+
+
+
+            <!-- Document360 Markdown Exporter -->
+            <div class="section-title">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                </svg>
+                <h2>Document360 Markdown Exporter</h2>
+            </div>
+            <div class="markdown-card glass-card">
+                <div class="markdown-header">
+                    <span class="markdown-desc">Copy this clean Markdown format directly into the Document360 editor:</span>
+                    <button id="copy-markdown-btn" class="btn-secondary btn-small">
+                        Copy to Clipboard
+                    </button>
+                </div>
+                <textarea id="markdown-preview" readonly></textarea>
+            </div>
+
+            <!-- Headings List -->
+            <div id="headings-section" class="headings-section hidden">
+                <div class="section-title">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path>
+                        <line x1="4" y1="22" x2="4" y2="15"></line>
+                    </svg>
+                    <h2>Document Outline & Structural Health Audit</h2>
+                </div>
+                <div class="headings-card glass-card">
+                    <div class="outline-audit-summary" id="outline-audit-summary">
+                        <!-- Populated dynamically via JS -->
+                    </div>
+                    <div class="headings-tree-wrapper">
+                        <div id="headings-list" class="headings-tree">
+                            <!-- Populated dynamically via JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Download JSON Button -->
+            <div class="actions-bar">
+                <button id="download-json" class="btn-secondary">
+                    
+                    Download JSON Report
+                </button>
+                <button id="new-analysis" class="btn-outline">
+                    
+                    Analyze Another
+                </button>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p>Migration Task &bull; Sanjay R</p>
+    </footer>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
