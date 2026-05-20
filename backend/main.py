@@ -1,19 +1,3 @@
-"""
-Document Analysis & Migration Readiness Tool — API Server
-
-=== INTERVIEW EXPLANATION ===
-What this server does:
-1. Defines FastAPI app.
-2. Configures CORS (Cross-Origin Resource Sharing) to allow frontend JS to fetch API.
-3. Serves the static HTML/CSS/JS frontend files.
-4. Exposes two main endpoints:
-   - GET /health: Simple status endpoint for API health check.
-   - POST /analyze: Receives document file, saves to temporary folder, parses it,
-     extracts metrics, analyzes using AI/rules, and saves a JSON report of the analysis.
-
-FastAPI is highly modular, automatically generates OpenAPI docs (swagger) at /docs,
-and is async by default, which is perfect for processing file uploads.
-"""
 
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -70,81 +54,82 @@ async def health_check():
         "version": "1.0.0"
     }
 
-
 @app.post("/analyze")
-async def analyze_file(file: UploadFile = File(...)):
+async def analyze_files(files: list[UploadFile] = File(...)):
     """
-    Upload and analyze a document.
+    Upload and analyze multiple documents.
     
     Accepts .docx and .pdf files.
-    Returns a comprehensive analysis report with metrics and AI insights.
+    Returns an array of comprehensive analysis reports with metrics and AI insights.
     """
-    # Validate file type
-    file_name = file.filename or "unknown"
-    file_ext = os.path.splitext(file_name)[1].lower()
+    reports = []
     
-    if file_ext not in [".docx", ".pdf"]:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Unsupported file type: {file_ext}. Please upload a .docx or .pdf file."
-        )
-    
-    # Save uploaded file to a temporary location
-    try:
-        with tempfile.NamedTemporaryFile(delete=False, suffix=file_ext) as tmp:
-            content = await file.read()
-            tmp.write(content)
-            tmp_path = tmp.name
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to save uploaded file: {str(e)}")
-    
-    try:
-        # Step 1: Parse the document
-        if file_ext == ".docx":
-            parsed_doc = parse_docx(tmp_path)
-        else:
-            parsed_doc = parse_pdf(tmp_path)
+    for file in files:
+        file_name = file.filename or "unknown"
+        file_ext = os.path.splitext(file_name)[1].lower()
         
-        # Override file name with original name
-        parsed_doc.file_name = file_name
+        if file_ext not in [".docx", ".pdf"]:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Unsupported file type in batch: {file_ext} for file '{file_name}'. Please upload only .docx or .pdf files."
+            )
         
-        # Step 2: Extract metrics
-        metrics = extract_metrics(parsed_doc)
+        # Save uploaded file to a temporary location
+        try:
+            with tempfile.NamedTemporaryFile(delete=False, suffix=file_ext) as tmp:
+                content = await file.read()
+                tmp.write(content)
+                tmp_path = tmp.name
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Failed to save uploaded file: {str(e)}")
         
-        # Step 3: AI analysis
-        ai_analysis, method = analyze_document(parsed_doc, metrics)
-        
-        # Step 4: Generate summary
-        summary = _generate_summary(metrics, ai_analysis)
-        
-        # Step 5: Build report
-        report = AnalysisReport(
-            document_metrics=metrics,
-            ai_analysis=ai_analysis,
-            summary=summary,
-            analysis_method=method,
-            markdown_content=parsed_doc.markdown_content,
-        )
-        
-        # Step 6: Save report as JSON
-        reports_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "reports")
-        os.makedirs(reports_dir, exist_ok=True)
-        report_filename = f"report_{file_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
-        report_path = os.path.join(reports_dir, report_filename)
-        
-        with open(report_path, "w", encoding="utf-8") as f:
-            json.dump(report.model_dump(), f, indent=2, ensure_ascii=False)
-        
-        return report.model_dump()
-        
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
-    finally:
-        # Clean up temporary file
-        if os.path.exists(tmp_path):
-            os.unlink(tmp_path)
-
-
+        try:
+            # Step 1: Parse the document
+            if file_ext == ".docx":
+                parsed_doc = parse_docx(tmp_path)
+            else:
+                parsed_doc = parse_pdf(tmp_path)
+            
+            # Override file name with original name
+            parsed_doc.file_name = file_name
+            
+            # Step 2: Extract metrics
+            metrics = extract_metrics(parsed_doc)
+            
+            # Step 3: AI analysis
+            ai_analysis, method = analyze_document(parsed_doc, metrics)
+            
+            # Step 4: Generate summary
+            summary = _generate_summary(metrics, ai_analysis)
+            
+            # Step 5: Build report
+            report = AnalysisReport(
+                document_metrics=metrics,
+                ai_analysis=ai_analysis,
+                summary=summary,
+                analysis_method=method,
+                markdown_content=parsed_doc.markdown_content,
+            )
+            
+            # Step 6: Save report as JSON
+            reports_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "reports")
+            os.makedirs(reports_dir, exist_ok=True)
+            report_filename = f"report_{file_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+            report_path = os.path.join(reports_dir, report_filename)
+            
+            with open(report_path, "w", encoding="utf-8") as f:
+                json.dump(report.model_dump(), f, indent=2, ensure_ascii=False)
+            
+            reports.append(report.model_dump())
+            
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Analysis failed for file '{file_name}': {str(e)}")
+        finally:
+            # Clean up temporary file
+            if os.path.exists(tmp_path):
+                os.unlink(tmp_path)
+                
+    return reports
 def _generate_summary(metrics, ai_analysis) -> str:
     """Generate a human-readable summary of the analysis."""
     return (

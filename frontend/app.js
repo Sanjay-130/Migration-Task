@@ -62,16 +62,32 @@ document.addEventListener('DOMContentLoaded', () => {
     const markdownPreview = document.getElementById('markdown-preview');
     const copyMarkdownBtn = document.getElementById('copy-markdown-btn');
     
-    let selectedFile = null;
-    let analysisResultData = null; 
+    let selectedFiles = [];
+    let reportsResultData = [];
+    let activeReportIndex = 0;
 
-    
     // Trigger file dialog on clicking drop zone
     dropZone.addEventListener('click', () => fileInput.click());
+
+    const addMoreBtn = document.getElementById('add-more-btn');
+    if (addMoreBtn) {
+        addMoreBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            fileInput.click();
+        });
+    }
+
+    const clearAllBtn = document.getElementById('clear-all-btn');
+    if (clearAllBtn) {
+        clearAllBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            resetUploadForm();
+        });
+    }
     
     fileInput.addEventListener('change', (e) => {
         if (e.target.files.length > 0) {
-            handleFileSelection(e.target.files[0]);
+            handleFilesSelection(e.target.files);
         }
     });
 
@@ -95,54 +111,105 @@ document.addEventListener('DOMContentLoaded', () => {
         const dt = e.dataTransfer;
         const files = dt.files;
         if (files.length > 0) {
-            handleFileSelection(files[0]);
+            handleFilesSelection(files);
         }
     });
 
-    function handleFileSelection(file) {
-        const ext = file.name.split('.').pop().toLowerCase();
-        if (ext !== 'docx' && ext !== 'pdf') {
-            alert('Unsupported file format! Please upload a .docx or .pdf file.');
+    function handleFilesSelection(filesList) {
+        for (let i = 0; i < filesList.length; i++) {
+            const file = filesList[i];
+            const ext = file.name.split('.').pop().toLowerCase();
+            if (ext !== 'docx' && ext !== 'pdf') {
+                alert(`Unsupported format for '${file.name}'! Only .docx and .pdf files are supported.`);
+                continue;
+            }
+            // Avoid duplicates
+            const isDuplicate = selectedFiles.some(f => f.name === file.name && f.size === file.size);
+            if (!isDuplicate) {
+                selectedFiles.push(file);
+            }
+        }
+        updateSelectedFilesUI();
+    }
+
+    function updateSelectedFilesUI() {
+        const selectedFilesList = document.getElementById('selected-files-list');
+        if (!selectedFilesList) return;
+        
+        selectedFilesList.innerHTML = '';
+        
+        if (selectedFiles.length === 0) {
+            fileInfo.classList.add('hidden');
+            analyzeBtn.classList.add('hidden');
+            dropZone.classList.remove('hidden');
             return;
         }
         
-        selectedFile = file;
-        fileNameDisplay.textContent = file.name;
-        fileSizeDisplay.textContent = `(${formatBytes(file.size)})`;
+        selectedFiles.forEach((file, index) => {
+            const row = document.createElement('div');
+            row.className = 'selected-file-row';
+            
+            const fileBadge = document.createElement('div');
+            fileBadge.className = 'file-badge';
+            fileBadge.style.display = 'flex';
+            fileBadge.style.alignItems = 'center';
+            fileBadge.style.gap = '0.5rem';
+            
+            // Icon
+            const ext = file.name.split('.').pop().toLowerCase();
+            const iconSvg = ext === 'pdf' 
+                ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>`
+                : `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>`;
+            
+            fileBadge.innerHTML = `
+                ${iconSvg}
+                <span class="selected-file-name" title="${file.name}">${file.name}</span>
+                <span class="selected-file-size">(${formatBytes(file.size)})</span>
+            `;
+            
+            const removeBtn = document.createElement('button');
+            removeBtn.type = 'button';
+            removeBtn.className = 'selected-file-remove';
+            removeBtn.innerHTML = '✕';
+            removeBtn.title = 'Remove file';
+            removeBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                selectedFiles.splice(index, 1);
+                updateSelectedFilesUI();
+            });
+            
+            row.appendChild(fileBadge);
+            row.appendChild(removeBtn);
+            selectedFilesList.appendChild(row);
+        });
         
         dropZone.classList.add('hidden');
         fileInfo.classList.remove('hidden');
         analyzeBtn.classList.remove('hidden');
     }
 
-    // Reset file selection
-    removeFileBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        resetUploadForm();
-    });
-
     function resetUploadForm() {
-        selectedFile = null;
+        selectedFiles = [];
         fileInput.value = '';
-        fileInfo.classList.add('hidden');
-        analyzeBtn.classList.add('hidden');
-        dropZone.classList.remove('hidden');
+        updateSelectedFilesUI();
     }
 
     // --- API SERVER ACTION ---
 
     analyzeBtn.addEventListener('click', async () => {
-        if (!selectedFile) return;
+        if (selectedFiles.length === 0) return;
 
         // Transition: Upload -> Loading
         uploadSection.classList.add('hidden');
         loadingSection.classList.remove('hidden');
 
         const formData = new FormData();
-        formData.append('file', selectedFile);
+        selectedFiles.forEach(file => {
+            formData.append('files', file);
+        });
 
         try {
-            // Call our FastAPI backend endpoint /analyze
+            // Call FastAPI backend endpoint /analyze
             const response = await fetch('/analyze', {
                 method: 'POST',
                 body: formData
@@ -150,14 +217,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (!response.ok) {
                 const errorData = await response.json();
-                throw new Error(errorData.detail || 'Failed to analyze document');
+                throw new Error(errorData.detail || 'Failed to analyze documents');
             }
 
-            const data = await response.json();
-            analysisResultData = data;
+            const data = await response.json(); // Array of reports
+            reportsResultData = data;
+            activeReportIndex = 0;
             
-            // Render result report details
-            renderResults(data);
+            // Render selection table list
+            renderDocumentsSummaryTable(reportsResultData);
+            
+            // Render first result details
+            renderResults(reportsResultData[0]);
             
             // Transition: Loading -> Results
             loadingSection.classList.add('hidden');
@@ -181,20 +252,69 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Download analysis JSON report file
     downloadJsonBtn.addEventListener('click', () => {
-        if (!analysisResultData) return;
+        if (reportsResultData.length === 0) return;
         
-        const jsonString = JSON.stringify(analysisResultData, null, 2);
+        const activeReport = reportsResultData[activeReportIndex];
+        const jsonString = JSON.stringify(activeReport, null, 2);
         const blob = new Blob([jsonString], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         
         const a = document.createElement('a');
         a.href = url;
-        a.download = `report_${analysisResultData.document_metrics.file_name}.json`;
+        a.download = `report_${activeReport.document_metrics.file_name}.json`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
     });
+
+    function renderDocumentsSummaryTable(reports) {
+        const summaryList = document.getElementById('documents-summary-list');
+        if (!summaryList) return;
+        
+        summaryList.innerHTML = '';
+        
+        reports.forEach((report, index) => {
+            const metrics = report.document_metrics;
+            const ai = report.ai_analysis;
+            
+            const row = document.createElement('tr');
+            row.className = `doc-row ${index === activeReportIndex ? 'active' : ''}`;
+            row.dataset.index = index;
+            
+            // Determine badge class and text
+            let badgeClass = 'ready';
+            let readinessLabel = 'Ready';
+            if (ai.migration_readiness.includes('Review')) {
+                badgeClass = 'review';
+                readinessLabel = 'Needs Review';
+            } else if (ai.migration_readiness.includes('Restructure') || ai.migration_readiness.includes('Requires')) {
+                badgeClass = 'restructure';
+                readinessLabel = 'Restructure';
+            }
+            
+            row.innerHTML = `
+                <td><span style="font-weight: 600;">${metrics.file_name}</span></td>
+                <td><span class="method-badge" style="margin: 0; font-size: 0.65rem;">${metrics.file_type.toUpperCase()}</span></td>
+                <td>${metrics.total_pages}</td>
+                <td>${formatNumber(metrics.word_count)}</td>
+                <td><span class="badge-status ${badgeClass}">${readinessLabel}</span></td>
+                <td><strong>${ai.overall_score}/10</strong></td>
+            `;
+            
+            row.addEventListener('click', () => {
+                activeReportIndex = index;
+                // Highlight active row
+                document.querySelectorAll('.doc-row').forEach(r => r.classList.remove('active'));
+                row.classList.add('active');
+                
+                // Render detail sections for this document
+                renderResults(reports[index]);
+            });
+            
+            summaryList.appendChild(row);
+        });
+    }
 
     // Copy Markdown to Clipboard
     copyMarkdownBtn.addEventListener('click', () => {

@@ -49,7 +49,7 @@
                 <p class="upload-description">Drop a <strong>.docx</strong> or <strong>.pdf</strong> file to analyze its migration readiness and automatically convert it into clean, copy-pasteable <strong>Markdown for Document360</strong>.</p>
                 
                 <div id="drop-zone" class="drop-zone">
-                    <input type="file" id="file-input" accept=".docx,.pdf" hidden>
+                    <input type="file" id="file-input" accept=".docx,.pdf" multiple hidden>
                     <div class="drop-zone-content">
                         <div class="drop-icon">
                             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -59,25 +59,22 @@
                             </svg>
                         </div>
                         <p>Drag & Drop or <span class="browse-link">Browse Files</span></p>
-                        <span class="file-types">Supports .docx and .pdf files</span>
+                        <span class="file-types">Supports .docx and .pdf files (Select multiple)</span>
                     </div>
                 </div>
 
                 <div id="file-info" class="file-info hidden">
-                    <div class="file-badge">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                            <polyline points="14 2 14 8 20 8"></polyline>
-                        </svg>
-                        <span id="file-name-display"></span>
-                        <span id="file-size-display" class="file-size"></span>
+                    <div id="selected-files-list" class="selected-files-list">
+                        <!-- Dynamic list of selected files will go here -->
                     </div>
-                    <button id="remove-file" class="btn-icon" title="Remove file">✕</button>
+                    <div class="file-info-actions" style="margin-top: 1rem; display: flex; gap: 1rem; justify-content: center;">
+                        <button id="add-more-btn" type="button" class="btn-secondary btn-small" style="padding: 0.4rem 0.8rem; font-size: 0.75rem;">Add More</button>
+                        <button id="clear-all-btn" type="button" class="btn-outline btn-small" style="padding: 0.4rem 0.8rem; font-size: 0.75rem;">Clear All</button>
+                    </div>
                 </div>
 
                 <button id="analyze-btn" class="btn-primary hidden">
-                    
-                    Analyze Document
+                    Analyze Documents
                 </button>
             </div>
         </section>
@@ -85,8 +82,8 @@
         <!-- Loading State -->
         <section id="loading-section" class="loading-section hidden">
             <div class="glass-card loading-card">
-                <h3 class="loading-title">Analyzing Your Document...</h3>
-                <p class="loading-text">Parsing structure • Extracting metrics • Running AI analysis</p>
+                <h3 class="loading-title">Analyzing Your Documents...</h3>
+                <p class="loading-text">Parsing structures • Extracting metrics • Running AI analysis</p>
                 <div class="progress-bar">
                     <div class="progress-fill"></div>
                 </div>
@@ -95,6 +92,30 @@
 
         <!-- Results Section -->
         <section id="results-section" class="results-section hidden">
+            <!-- Batch Upload Summary Table -->
+            <div class="section-title">
+                <h2>Uploaded Documents Summary</h2>
+            </div>
+            <div class="documents-summary-wrapper glass-card" style="margin-bottom: 2rem;">
+                <div class="table-scroll-container">
+                    <table class="documents-summary-table">
+                        <thead>
+                            <tr>
+                                <th>Document Name</th>
+                                <th>Type</th>
+                                <th>Pages</th>
+                                <th>Words</th>
+                                <th>Migration Readiness</th>
+                                <th>Quality Score</th>
+                            </tr>
+                        </thead>
+                        <tbody id="documents-summary-list">
+                            <!-- Dynamic rows will be rendered here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
             <!-- Summary Banner -->
             <div id="summary-banner" class="summary-banner glass-card">
                 <div class="summary-left">

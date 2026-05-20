@@ -1022,3 +1022,129 @@ body {
     padding: 0.15rem 0.45rem;
     cursor: help;
 }
+
+/* Selected files uploader styling */
+.selected-files-list {
+    width: 100%;
+    border: 2px dashed #0f172a;
+    background-color: #f1f5f9;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    max-height: 250px;
+    overflow-y: auto;
+}
+
+.selected-file-row {
+    background: #ffffff;
+    border: 2px solid #0f172a;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.85rem;
+    box-shadow: 2px 2px 0 0 #0f172a;
+}
+
+.selected-file-name {
+    font-weight: 600;
+    color: var(--text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 70%;
+}
+
+.selected-file-size {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.selected-file-remove {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 1rem;
+    color: var(--text-muted);
+}
+
+.selected-file-remove:hover {
+    color: #dc2626;
+}
+
+/* Documents Summary Table */
+.table-scroll-container {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.documents-summary-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+}
+
+.documents-summary-table th {
+    background-color: #f1f5f9;
+    color: var(--text-primary);
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.5px;
+    padding: 0.75rem 1rem;
+    border-bottom: 2px solid #0f172a;
+}
+
+.documents-summary-table td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border-light);
+    font-size: 0.85rem;
+    vertical-align: middle;
+}
+
+.doc-row {
+    cursor: pointer;
+    transition: var(--transition-fast);
+}
+
+.doc-row:hover {
+    background-color: #eff6ff;
+}
+
+.doc-row.active {
+    background-color: #dbeafe !important;
+    border-left: 4px solid var(--primary);
+}
+
+.doc-row.active td {
+    font-weight: 600;
+}
+
+/* Status Badges */
+.badge-status {
+    display: inline-block;
+    padding: 0.25rem 0.6rem;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    border: 1px solid #0f172a;
+}
+
+.badge-status.ready {
+    background-color: var(--ready-bg);
+    border-color: var(--ready-border);
+    color: var(--ready-text);
+}
+
+.badge-status.review {
+    background-color: var(--review-bg);
+    border-color: var(--review-border);
+    color: var(--review-text);
+}
+
+.badge-status.restructure {
+    background-color: var(--restructure-bg);
+    border-color: var(--restructure-border);
+    color: var(--restructure-text);
+}
